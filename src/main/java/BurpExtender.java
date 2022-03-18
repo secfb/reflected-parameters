@@ -274,9 +274,31 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender, I
                 {
                     synchronized(reflectedEntryList)
                     {
+                        // Find value of content-type header
+                        String contentTypeGrepString = "\nContent-Type:".toLowerCase();
+                        String contentType = "";
+                        int idx = response.toLowerCase().indexOf(contentTypeGrepString);
+
+                        if (idx >= 0) {
+                            int startIdx = idx + contentTypeGrepString.length();
+
+                            contentType = response.substring(
+                                startIdx,
+                                response.indexOf("\n", startIdx)
+                            ).trim().toLowerCase();
+                        }
+
                         int row = reflectedEntryList.size();
-                        reflectedEntryList.add(new ReflectedEntry(messageInfoMarked, helpers.analyzeRequest(messageInfo).getUrl(), 
-                                helpers.analyzeRequest(messageInfo).getMethod(), parameters, callbacks.getToolName(toolFlag)));
+                        reflectedEntryList.add(
+                            new ReflectedEntry(
+                                messageInfoMarked,
+                                helpers.analyzeRequest(messageInfo).getUrl(), 
+                                helpers.analyzeRequest(messageInfo).getMethod(),
+                                parameters,
+                                callbacks.getToolName(toolFlag),
+                                contentType
+                            )
+                        );
                         fireTableRowsInserted(row, row);
                     }
                 }
@@ -297,7 +319,7 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender, I
     @Override
     public int getColumnCount()
     {
-        return 5;
+        return 6;
     }
 
     @Override
@@ -315,6 +337,8 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender, I
                 return "URL";
             case 4:
                 return "Tool";
+            case 5:
+                return "ContentType";
             default:
                 return "";
         }
@@ -343,6 +367,8 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender, I
                 return reflectedEntry.url.getFile();
             case 4:
                 return reflectedEntry.tool;
+            case 5:
+                return reflectedEntry.contentType;
             default:
                 return "";
         }
@@ -570,7 +596,8 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender, I
         final String method;                                    // Method used in the request
         List<String[]> parameters;                              // Parameter names with the values
         final String tool;                                      // Tool name from which the request was sent
-        
+        final String contentType;                               // Response content-type
+
         ReflectedEntry()
         {
             requestResponse = null;
@@ -578,16 +605,17 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender, I
             tool = null;
             method = null;
             parameters = new ArrayList<>();
+            contentType = null;
         }
         
-        ReflectedEntry(IHttpRequestResponseWithMarkers requestResponse, URL url, String method, List<String[]> parameters, String tool)
-        {
-            
+        ReflectedEntry(IHttpRequestResponseWithMarkers requestResponse, URL url, String method, List<String[]> parameters, String tool, String contentType)
+        {   
             this.requestResponse = requestResponse;
             this.url = url;
             this.method = method;
             this.parameters = parameters;
             this.tool = tool;
+            this.contentType = contentType;
         }
     }
 }
